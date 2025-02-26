@@ -1,1 +1,34 @@
+# Convert message to binary
+def message_to_binary(message):
+    return ''.join(format(byte, '08b') for byte in message)
 
+# Encrypt and encode message into an image
+def hide_data(image_path, message, key, output_path):
+    img = Image.open(image_path)
+    img = img.convert('RGB')
+    pixels = np.array(img)
+
+    # Encrypt the message
+    encrypted_message = encrypt_message(message, key)
+    
+    # Convert encrypted message to binary
+    binary_message = message_to_binary(encrypted_message + b'####')  # Delimiter
+
+    if len(binary_message) > pixels.size:
+        raise ValueError("Message is too large to hide in the image!")
+
+    # Embed binary message into image pixels
+    index = 0
+    for row in pixels:
+        for pixel in row:
+            for i in range(3):  # Modify R, G, B values
+                if index < len(binary_message):
+                    pixel[i] = (pixel[i] & ~1) | int(binary_message[index])
+                    index += 1
+                else:
+                    break
+
+    # Save the modified image
+    stego_img = Image.fromarray(pixels)
+    stego_img.save(output_path)
+    print("Data hidden successfully!")
